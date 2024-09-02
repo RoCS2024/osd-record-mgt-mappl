@@ -1,1 +1,1 @@
-# osd-record-mgt-mappl
+# osd-records-mgt-mobile-appl
