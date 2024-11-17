@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, ImageBackground, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, ImageBackground, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 
-const Forgot = () => {
+const ForgotPassword = () => {
   const navigation = useNavigation();
   const [username, setUsername] = useState('');
   const [otp, setOtp] = useState('');
@@ -18,43 +18,30 @@ const Forgot = () => {
     form: ''
   });
 
-  const oldPassword = ""; // Replace with actual old password if needed
-
   /**
-   * Handles changes to input fields and sets the corresponding state.
-   * Also validates the username field to ensure only alphanumeric characters are allowed.
-   * 
-   * @param {string} name - The name of the input field (e.g., 'username', 'otp', 'password')
-   * @param {string} value - The value entered by the user
+   * Handles input changes and updates the state.
+   * @param {string} name - Field name (username, otp, password)
+   * @param {string} value - Field value entered by the user.
    */
   const handleChange = (name, value) => {
+    setErrors({ ...errors, [name]: '' });
+    
     if (name === 'username') {
       setUsername(value);
-      if (/[^a-zA-Z0-9]/.test(value)) {
-        setErrors({ ...errors, username: 'Please Enter a Valid Input (alphanumeric characters only).' });
-      } else {
-        setErrors({ ...errors, username: '' });
-      }
     }
     if (name === 'otp') setOtp(value);
     if (name === 'password') setPassword(value);
-    setErrors({ ...errors, [name]: '' });
   };
 
   /**
-   * Submits the form data to the server for OTP request or verification.
-   * Checks if the username is valid, and toggles between requesting OTP and verifying OTP based on state.
-   * 
-   * @async
-   * @function
-   * @returns {Promise<void>}
-   * 
-   * Note: Change the IP address in the axios URL to match your backend server's IP address and port.
+   * Handles the password reset process.
+   * First, requests OTP with username, then submits OTP and new password.
    */
   const handleSubmit = async () => {
     setErrors({ username: '', otp: '', password: '', form: '' });
     setIsButtonDisabled(true);
 
+    // Request OTP if not yet showing password input
     if (!showPasswordAndOTP) {
       if (!username) {
         setErrors({ ...errors, username: 'Username is Required' });
@@ -62,14 +49,8 @@ const Forgot = () => {
         return;
       }
 
-      if (/[^a-zA-Z0-9]/.test(username)) {
-        setErrors({ ...errors, username: 'Please Enter a Valid Input (alphanumeric characters only).' });
-        setIsButtonDisabled(false);
-        return;
-      }
-
       try {
-        const response = await axios.post('http://192.168.1.6:8080/user/forgot-password', { username });
+        const response = await axios.post('http://192.168.1.21:8080/user/forgot-password', { username });
         if (response.status === 200) {
           setShowPasswordAndOTP(true);
         } else {
@@ -81,12 +62,6 @@ const Forgot = () => {
         setIsButtonDisabled(false);
       }
     } else {
-      if (password === oldPassword) {
-        setErrors({ ...errors, password: 'You cannot use the same password. Please enter a new one.' });
-        setIsButtonDisabled(false);
-        return;
-      }
-
       const validationErrors = {};
       if (!otp) validationErrors.otp = 'OTP is Required';
       if (!password) validationErrors.password = 'Password is Required';
@@ -97,12 +72,19 @@ const Forgot = () => {
         return;
       }
 
+      // Submit OTP and new password
       try {
-        const response = await axios.post('http://192.168.1.6:8080/user/verify-forgot-password', { username, otp, password });
+        const payload = {
+          username,
+          otp,
+          password
+        };
+        const response = await axios.post('http://192.168.1.21:8080/user/verify-forgot-password', payload);
         if (response.status === 200) {
+          Alert.alert('Success', 'Password has been updated successfully!');
           navigation.navigate('Login');
         } else {
-          setErrors({ ...errors, form: 'Request Failed. Please check your credentials and try again.' });
+          setErrors({ ...errors, form: 'Failed to update password. Please check your OTP and try again.' });
         }
       } catch (error) {
         setErrors({ ...errors, form: 'An error occurred while processing your request.' });
@@ -141,13 +123,13 @@ const Forgot = () => {
                   style={styles.input}
                   value={otp}
                   onChangeText={(text) => handleChange('otp', text)}
-                  keyboardType="numeric"
+                  keyboardType="default"
                   placeholder="Enter OTP"
                 />
               </View>
               {errors.otp && <Text style={styles.errorText}>{errors.otp}</Text>}
 
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>New Password</Text>
               <View style={styles.inputGroup}>
                 <TextInput
                   style={styles.input}
@@ -263,4 +245,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Forgot;
+export default ForgotPassword;

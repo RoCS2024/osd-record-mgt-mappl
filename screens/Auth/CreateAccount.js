@@ -7,7 +7,7 @@ import axios from 'axios';
 const CreateAccount = () => {
   const navigation = useNavigation();
   const [userType, setUserType] = useState('');
-  const [username, setUsername] = useState('')
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [studentOrEmployeeNumber, setStudentOrEmployeeNumber] = useState('');
   const [email, setEmail] = useState('');
@@ -24,7 +24,6 @@ const CreateAccount = () => {
 
   /**
    * Validates the email format using a regular expression.
-   * 
    * @param {string} email - The email address to validate
    * @returns {boolean} - Returns true if the email format is valid, otherwise false
    */
@@ -41,11 +40,13 @@ const CreateAccount = () => {
    * @async
    * @function
    * @returns {Promise<void>}
-   * 
-   * Note: Change the IP address in the axios URL to match your backend server's IP address and port.
    */
   const handleRegister = async () => {
     setErrorMessage('');
+    if (!username || !password) {
+      setErrorMessage('Please enter valid username and password.');
+      return;
+    }
 
     if (!username || !/^[a-zA-Z0-9]+$/.test(username)) {
       setErrorMessage('Please enter a valid username (alphanumeric characters only).');
@@ -55,10 +56,12 @@ const CreateAccount = () => {
       setErrorMessage('Please enter a password.');
       return;
     }
+
     if (userType !== 'guest' && !studentOrEmployeeNumber) {
       setErrorMessage('Please enter your Member Number.');
       return;
     }
+
     if (userType !== 'guest' && !validateEmail(email)) {
       setErrorMessage('Please enter a valid email address.');
       return;
@@ -69,20 +72,11 @@ const CreateAccount = () => {
     if (userType === 'guest') {
       try {
         const guestNumber = `GUEST_${Math.floor(1000 + Math.random() * 9000)}`;
-        const payload = {
-          username,
-          password,
-          guest: { guestNumber }
-        };
-        const response = await axios.post('http://192.168.1.6:8080/user/register', payload);
-        if (response.status === 200) {
-          navigation.navigate('AddGuest', { guestNumber });
-        } else {
-          Alert.alert('Error', 'Unexpected response received.');
-        }
+        console.log('Navigating to AddGuest with:', username, password);
+        // Pass username and password to AddGuest
+        navigation.navigate('AddGuest', { guestNumber, username, password });
       } catch (error) {
-        const message = error.response?.data?.message || 'An unexpected error occurred.';
-        setErrorMessage(message);
+        setErrorMessage('An unexpected error occurred.');
       } finally {
         setIsSubmitting(false);
       }
@@ -101,8 +95,10 @@ const CreateAccount = () => {
    */
   const submitForm = async () => {
     const payload = {
-      username,
-      password,
+      user: {
+        username,
+        password
+      },
       [userType]: {
         [userType === 'student' ? 'studentNumber' : 'employeeNumber']: studentOrEmployeeNumber,
         email
@@ -110,7 +106,7 @@ const CreateAccount = () => {
     };
 
     try {
-      const response = await axios.post('http://192.168.1.6:8080/user/register', payload);
+      const response = await axios.post('http://192.168.1.21:8080/user/register', payload);
       if (response.status === 200) {
         navigation.navigate('VerifyOtp', { username });
       } else {
@@ -181,6 +177,16 @@ const CreateAccount = () => {
                   autoCapitalize="none"
                 />
               </View>
+
+              <Text style={styles.label}>Email</Text>
+              <View style={styles.inputGroup}>
+                <TextInput
+                  style={styles.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                />
+              </View>
             </>
           )}
 
@@ -195,11 +201,7 @@ const CreateAccount = () => {
                   autoCapitalize="none"
                 />
               </View>
-            </>
-          )}
 
-          {userType !== 'guest' && (
-            <>
               <Text style={styles.label}>Email</Text>
               <View style={styles.inputGroup}>
                 <TextInput
@@ -273,7 +275,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 8,
     paddingHorizontal: 10,
-    borderWidth: 0.5,
+    borderWidth: 1,
   },
   input: {
     flex: 1,
@@ -289,7 +291,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 8,
     paddingHorizontal: 10,
-    borderWidth: 0.5,
+    borderWidth: 1,
     height: 40,
   },
   picker: {

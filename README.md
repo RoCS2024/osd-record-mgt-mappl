@@ -1,1 +1,0 @@
-# osd-record-mgt-mappl
