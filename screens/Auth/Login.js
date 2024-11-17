@@ -10,7 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * Allows users to input username and password, toggle password visibility,
  * and submit the form to authenticate with the backend server.
  */
-const LoginScreen = () => {
+const Login = () => {
   const navigation = useNavigation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -26,7 +26,7 @@ const LoginScreen = () => {
 
   /**
    * Handles the login process by sending a POST request to the backend server.
-   * Upon successful authentication, navigates to the Main screen based on the user's role.
+   * Upon successful authentication, navigates to the appropriate screen based on the user's role.
    * 
    * @async
    * @function
@@ -34,59 +34,81 @@ const LoginScreen = () => {
    * 
    * Note: Change the IP address in the axios URL to match your backend server's IP address and port.
    */
-  const handleLogin = async () => {
-    setErrorMessage('');
-    const userData = { username, password };
+ /**
+ * handleLogin is an asynchronous function that handles the login process for the user.
+ * It sends a POST request with the username and password to the backend server, 
+ * retrieves the JWT token upon successful authentication, decodes the token to extract 
+ * the user's role, and navigates to the appropriate screen based on the user's role.
+ * 
+ */
+const handleLogin = async () => {
+  setErrorMessage(''); // Clear any previous error messages
+  const userData = { username, password };
 
-    try {
-      const response = await axios.post('http://192.168.1.6:8080/user/login', userData, {
-        headers: { 'Content-Type': 'application/json' },
-      });
+  try {
+    const response = await axios.post('http://192.168.1.21:8080/user/login', userData, {
+      headers: { 'Content-Type': 'application/json' },
+    });
 
-      if (response.status === 200) {
-        const token = response.headers['jwt-token'];
-        if (!token) {
-          setErrorMessage('Token not received from server.');
-          return;
-        }
+    if (response.status === 200) {
+      // Extract JWT token from the response headers
+      const token = response.headers['jwt-token'];
+      if (!token) {
+        setErrorMessage('Token not received from server.');
+        return;
+      }
 
-        const decodedToken = jwtDecode(token);
-        const roles = decodedToken.authorities || [];
-        console.log('Roles:', roles);
+      const decodedToken = jwtDecode(token);
+      const roles = decodedToken.authorities || [];
 
-        const roleString = roles.join(' ');
-        let userRole = null;
+      const roleString = roles.join(' ');
+      let userRole = null;
 
-        if (roleString.includes('ROLE_STUDENT')) {
-          userRole = 'ROLE_STUDENT';
-        } else if (roleString.includes('ROLE_EMPLOYEE')) {
-          userRole = 'ROLE_EMPLOYEE';
-        } else if (roleString.includes('ROLE_GUEST')) {
-          userRole = 'ROLE_GUEST';
-        }
+      if (roleString.includes('ROLE_STUDENT')) {
+        userRole = 'ROLE_STUDENT';
+      } else if (roleString.includes('ROLE_EMPLOYEE')) {
+        userRole = 'ROLE_EMPLOYEE';
+      } else if (roleString.includes('ROLE_GUEST')) {
+        userRole = 'ROLE_GUEST';
+      }
 
-        if (userRole) {
-          await AsyncStorage.setItem('role', userRole);
-          console.log('Saved role:', userRole);
+      if (userRole) {
+        await AsyncStorage.setItem('role', userRole);
 
-          navigation.replace('Main');
-        } else {
-          Alert.alert('Error', 'Unauthorized role. Please try again.');
+        if (userRole === 'ROLE_STUDENT') {
+          navigation.replace('Main', {
+            screen: 'Students',
+            params: { screen: 'StudentViolation' },
+          });
+        } else if (userRole === 'ROLE_EMPLOYEE') {
+          navigation.replace('Main', {
+            screen: 'Employees',
+            params: { screen: 'EmployeeReport' },
+          });
+        } else if (userRole === 'ROLE_GUEST') {
+          navigation.replace('Main', {
+            screen: 'Guests',
+            params: { screen: 'GuestViolation' },
+          });
         }
       } else {
-        setErrorMessage('Login failed. Please check your credentials.');
+        Alert.alert('Error', 'Unauthorized role. Please try again.');
       }
-    } catch (error) {
-      if (error.response) {
-        const serverMessage = error.response.data?.message || 'Invalid request. Please check your input.';
-        setErrorMessage(serverMessage);
-      } else if (error.request) {
-        setErrorMessage('No response from server. Check network or server status.');
-      } else {
-        setErrorMessage('Request error. Please try again.');
-      }
+    } else {
+      setErrorMessage('Login failed. Please check your credentials.');
     }
-  };
+  } catch (error) {
+    if (error.response) {
+      const serverMessage = error.response.data?.message || 'Invalid request. Please check your input.';
+      setErrorMessage(serverMessage);
+    } else if (error.request) {
+      setErrorMessage('No response from server. Check network or server status.');
+    } else {
+      setErrorMessage('Request error. Please try again.');
+    }
+  }
+};
+  
 
   return (
     <ImageBackground source={require('../../assets/images/img3-1.png')} style={styles.background}>
@@ -96,7 +118,7 @@ const LoginScreen = () => {
         </View>
         <Text style={styles.headerText}>Login</Text>
         
-        <View style={styles.inputGroup}>
+        <View style={[styles.inputGroup, styles.usernameField]}>
           <Text style={styles.inputLabel}>Username</Text>
           <TextInput
             style={styles.input}
@@ -106,7 +128,7 @@ const LoginScreen = () => {
           />
           <Image source={require('../../assets/images/user-1.png')} style={styles.icon} />
         </View>
-        
+
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Password</Text>
           <TextInput
@@ -123,7 +145,7 @@ const LoginScreen = () => {
 
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
-        <TouchableOpacity style={styles.forgotPasswordButton} onPress={() => navigation.navigate('Forgot')}>
+        <TouchableOpacity style={styles.forgotPasswordButton} onPress={() => navigation.navigate('ForgotPassword')}>
           <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
         </TouchableOpacity>
 
@@ -168,12 +190,15 @@ const styles = StyleSheet.create({
   inputGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 15,
     width: '100%',
     backgroundColor: 'white',
     borderRadius: 8,
     paddingHorizontal: 10,
-    borderWidth: 0.5,
+    borderWidth: 1,
+  },
+  usernameField: {
+    marginBottom: 25,
   },
   input: {
     flex: 1,
@@ -201,6 +226,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  forgotUsernameButton: {
+    alignSelf: 'flex-end',
+    bottom: 10,
+    marginBottom: 10,
+  },
+  forgotUsernameText: {
+    color: '#0174BE',
+  },
   forgotPasswordButton: {
     alignSelf: 'flex-end',
     bottom: 10,
@@ -215,7 +248,7 @@ const styles = StyleSheet.create({
     padding: 10,
     alignItems: 'center',
     borderRadius: 5,
-    marginBottom: 15,
+    marginBottom: 5,
   },
   loginButtonText: {
     color: 'white',
@@ -230,4 +263,4 @@ const styles = StyleSheet.create({
   }
 });
 
-export default LoginScreen;
+export default Login;

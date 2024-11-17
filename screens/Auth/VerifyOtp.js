@@ -8,7 +8,7 @@ import axios from 'axios';
  * Users enter their username and OTP, then submit the form for verification.
  * Displays a success or error message based on the verification response from the backend.
  */
-const VerifyOtpScreen = () => {
+const VerifyOtp = () => {
   const navigation = useNavigation();
   const [username, setUsername] = useState('');
   const [otp, setOtp] = useState('');
@@ -34,7 +34,7 @@ const VerifyOtpScreen = () => {
         otp,
       };
 
-      const response = await axios.post('http://192.168.1.6:8080/user/verify-otp', payload, {
+      const response = await axios.post('http://192.168.1.21:8080/user/verify-otp', payload, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -87,7 +87,7 @@ const VerifyOtpScreen = () => {
               onChangeText={setOtp}
               autoCapitalize="none"
               editable={!isSubmitting}
-              keyboardType="numeric"
+              keyboardType="default"
             />
           </View>
 
@@ -185,4 +185,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default VerifyOtpScreen;
+export default VerifyOtp;
