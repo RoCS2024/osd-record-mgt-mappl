@@ -1,24 +1,22 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, ScrollView, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 /**
- * AddGuest component allows the user to input personal details for adding a new guest.
- * This component handles the entry of first name, middle name, last name, birthdate, birthplace, 
- * citizenship, religion, civil status, and sex, as well as navigating to the next screen to save the data.
+ * AddGuest component collects personal details from the guest, including name, birthdate, birthplace, etc.
+ * It validates the input fields and, if valid, navigates to the next step for contact details.
  */
 const AddGuest = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { guestNumber, username, password } = route.params;
-  console.log('Received in AddGuest:', username, password);
 
   const [personalDetails, setPersonalDetails] = useState({
     firstName: '',
     middleName: '',
     lastName: '',
-    birthdate: new Date().toISOString().split('T')[0],
+    birthdate: '',
     birthplace: '',
     citizenship: '',
     religion: '',
@@ -27,45 +25,72 @@ const AddGuest = () => {
   });
 
   const [datePickerVisible, setDatePickerVisible] = useState(false);
+  const [errors, setErrors] = useState({});
 
   /**
-   * Handles input changes for each field in the personal details form.
-   * Updates the respective field in the state.
+   * Handles changes to the input fields and clears the related error messages.
    * 
-   * @param {string} field - The name of the field being updated.
-   * @param {string} value - The new value to be set for the field.
+   * @param {string} field - The field to be updated (e.g., firstName, lastName, etc.).
+   * @param {string} value - The value to set for the field.
    */
   const handleInputChange = (field, value) => {
     setPersonalDetails(prevState => ({ ...prevState, [field]: value }));
+    setErrors(prevErrors => ({ ...prevErrors, [field]: undefined }));
   };
 
   /**
-   * Displays the date picker when the user clicks on the birthdate input field.
+   * Shows the date picker for selecting the birthdate.
    */
   const showDatePicker = () => {
     setDatePickerVisible(true);
   };
 
   /**
-   * Handles the date selection from the date picker.
-   * Updates the birthdate field with the selected date.
+   * Handles the change of the date in the date picker.
    * 
-   * @param {Event} event - The event triggered by the date picker change.
-   * @param {Date} selectedDate - The date selected by the user.
+   * @param {Event} event - The event object from the date picker.
+   * @param {Date} selectedDate - The selected date.
    */
   const onDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || new Date(personalDetails.birthdate);
-    setDatePickerVisible(Platform.OS === 'ios'); // Keep date picker visible on iOS
+    setDatePickerVisible(Platform.OS === 'ios');
     handleInputChange('birthdate', currentDate.toISOString().split('T')[0]);
   };
 
   /**
-   * Navigates to the AddGuestNext screen, passing the personal details, guest number,
-   * and credentials (username and password) for the next step.
+   * Handles the form submission by validating the input fields.
+   * If any field is missing, it sets the error state. If all fields are filled, 
+   * it navigates to the next step, `AddGuestNext`, passing the collected data.
+   * 
+   * @async
+   * @function
+   * @returns {Promise<void>}
    */
   const handleNext = () => {
-    console.log('Passing to AddGuestNext:', username, password);
-    navigation.navigate('AddGuestNext', { personalDetails, guestNumber, username, password });
+    const newErrors = {};
+    Object.keys(personalDetails).forEach((key) => {
+      if (!personalDetails[key]) {
+        newErrors[key] = `Please enter a ${formatPlaceholder(key)}`;
+      }
+    });
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+    } else {
+      navigation.navigate('AddGuestNext', { personalDetails, guestNumber, username, password });
+    }
+  };
+
+  /**
+   * Formats the placeholder text for field names by adding spaces and capitalizing the first letter.
+   * 
+   * @param {string} key - The key (field name) to format.
+   * @returns {string} - The formatted placeholder text.
+   */
+  const formatPlaceholder = (key) => {
+    return key
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, (str) => str.toUpperCase());
   };
 
   return (
@@ -79,25 +104,28 @@ const AddGuest = () => {
 
         {Object.keys(personalDetails).map((key) => (
           <View key={key} style={styles.inputGroup}>
-            <TextInput
-              style={[styles.input, key === 'birthdate' && { paddingRight: 40 }]}
-              placeholder={key.charAt(0).toUpperCase() + key.slice(1)}
-              onChangeText={(text) => handleInputChange(key, text)}
-              value={personalDetails[key]}
-              editable={key !== 'birthdate'}
-            />
-            {key === 'birthdate' && (
-              <TouchableOpacity onPress={showDatePicker} style={styles.iconButton}>
-                <Image source={require('../../assets/images/calendar-1.png')} style={styles.iconInsideInput} />
-              </TouchableOpacity>
-            )}
+            <View style={[styles.inputWrapper, key === 'birthdate' && { flexDirection: 'row' }]}>
+              <TextInput
+                style={[styles.input, key === 'birthdate' && { paddingRight: 40 }]}
+                placeholder={key === 'birthdate' ? 'Birthdate' : formatPlaceholder(key)}
+                onChangeText={(text) => handleInputChange(key, text)}
+                value={personalDetails[key]}
+                editable={key !== 'birthdate'}
+              />
+              {key === 'birthdate' && (
+                <TouchableOpacity onPress={showDatePicker} style={styles.iconButton}>
+                  <Image source={require('../../assets/images/calendar-1.png')} style={styles.iconInsideInput} />
+                </TouchableOpacity>
+              )}
+            </View>
+            {errors[key] && <Text style={styles.errorText}>{errors[key]}</Text>}
           </View>
         ))}
 
         {datePickerVisible && (
           <DateTimePicker
             testID="dateTimePicker"
-            value={new Date(personalDetails.birthdate)}
+            value={new Date(personalDetails.birthdate || new Date())}
             mode="date"
             display="default"
             onChange={onDateChange}
@@ -105,6 +133,7 @@ const AddGuest = () => {
           />
         )}
       </ScrollView>
+
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.backButton}>
           <Text style={styles.backButtonText}>Back</Text>
@@ -128,12 +157,13 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginTop: 40
+    marginTop: 40,
+    marginBottom: 20,
   },
   logo: {
-    width: Dimensions.get('window').width * 0.28,
-    height: Dimensions.get('window').width * 0.28,
-    resizeMode: 'contain'
+    width: 120,
+    height: 120,
+    resizeMode: 'contain',
   },
   header: {
     fontSize: 20,
@@ -146,10 +176,15 @@ const styles = StyleSheet.create({
     marginBottom: 20
   },
   inputGroup: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+    position: 'relative',
+  },
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
-    position: 'relative'
+    width: '100%',
   },
   input: {
     flex: 1,
@@ -157,24 +192,33 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     padding: 10,
     borderRadius: 5,
+    width: '100%',
   },
   iconButton: {
     position: 'absolute',
     right: 10,
-    height: '100%',
+    top: '50%',
+    transform: [{ translateY: -12 }],
+    height: 24,
+    width: 24,
     justifyContent: 'center',
-    padding: 10,
+    alignItems: 'center',
   },
   iconInsideInput: {
     width: 24,
     height: 24,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginTop: 5,
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingBottom: 20,
-    paddingTop: 10,
+    paddingTop: 20,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderColor: '#ccc'

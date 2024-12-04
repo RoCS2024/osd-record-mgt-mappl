@@ -4,16 +4,13 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import axios from 'axios';
 
 /**
- * AddGuestNext component allows the user to input contact details for a new guest.
- * This includes email, contact number, and address. Upon submission, the collected data is sent 
- * to the backend for guest registration, and the user is navigated to the OTP verification screen.
+ * AddGuestNext component allows for the input of guest's contact details such as email, phone number, and address.
+ * It validates the form fields and submits the data to the backend server for guest registration.
  */
 const AddGuestNext = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { personalDetails, guestNumber, username, password } = route.params;
-
-  console.log('Received in AddGuestNext:', username, password);
 
   const [contactDetails, setContactDetails] = useState({
     email: '',
@@ -21,15 +18,18 @@ const AddGuestNext = () => {
     address: ''
   });
 
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   /**
-   * Handles input changes for each field in the contact details form.
-   * Updates the respective field in the state.
+   * Handles the change of form fields and clears the related error messages.
    * 
-   * @param {string} field - The name of the field being updated.
-   * @param {string} value - The new value to be set for the field.
+   * @param {string} field - The field to be updated (e.g., email, contactNumber, address).
+   * @param {string} value - The new value to set for the field.
    */
   const handleInputChange = (field, value) => {
     setContactDetails(prevState => ({ ...prevState, [field]: value }));
+    setErrors(prevErrors => ({ ...prevErrors, [field]: undefined }));
   };
 
   /**
@@ -40,16 +40,70 @@ const AddGuestNext = () => {
   };
 
   /**
-   * Handles the form submission by sending a POST request to the backend server.
-   * Upon success, navigates the user to the OTP verification screen.
+   * Validates the email format.
+   * 
+   * @param {string} email - The email address to validate.
+   * @returns {boolean} - Returns true if the email is valid, otherwise false.
+   */
+  const validateEmail = (email) => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
+  };
+
+  /**
+   * Validates the phone number format (must be 11 digits).
+   * 
+   * @param {string} phoneNumber - The phone number to validate.
+   * @returns {boolean} - Returns true if the phone number is valid, otherwise false.
+   */
+  const validatePhoneNumber = (phoneNumber) => {
+    const phoneRegex = /^[0-9]{11}$/;
+    return phoneRegex.test(phoneNumber);
+  };
+
+  /**
+   * Validates the entire form by checking if the required fields are filled and valid.
+   * 
+   * @returns {boolean} - Returns true if all form fields are valid, otherwise false.
+   */
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!contactDetails.email) {
+      newErrors.email = 'Please enter an email';
+    } else if (!validateEmail(contactDetails.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!contactDetails.contactNumber) {
+      newErrors.contactNumber = 'Please enter a contact number';
+    } else if (!validatePhoneNumber(contactDetails.contactNumber)) {
+      newErrors.contactNumber = 'Incorrect or incomplete contact number';
+    }
+
+    if (!contactDetails.address) {
+      newErrors.address = 'Please enter an address';
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
+
+  /**
+   * Handles form submission by validating the form and sending the guest data to the backend server.
    * 
    * @async
    * @function
    * @returns {Promise<void>}
-   * 
-   * Note: Change the IP address in the axios URL to match your backend server's IP address and port.
    */
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+
     const payload = {
       user: {
         username,
@@ -64,8 +118,11 @@ const AddGuestNext = () => {
 
     console.log("Payload being sent to the server:", JSON.stringify(payload));
 
+  /**
+  * Note: Change the IP address in the axios URL to match your backend server's IP address and port.
+  */
     try {
-      const response = await axios.post('http://192.168.1.21:8080/user/register', payload);
+      const response = await axios.post('http://192.168.1.8:8080/user/register', payload);
 
       if (response.status === 200) {
         Alert.alert('Success', 'Guest has been successfully registered!');
@@ -76,6 +133,20 @@ const AddGuestNext = () => {
     } catch (error) {
       const message = error.response?.data?.message || 'An error occurred during registration.';
       Alert.alert('Error', message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  /**
+   * Handles the input for the contact number field, allowing only numeric values.
+   * 
+   * @param {string} text - The text input for the contact number.
+   */
+  const handleContactNumberInput = (text) => {
+    const newText = text.replace(/[^0-9]/g, '');
+    if (newText.length <= 11) {
+      handleInputChange('contactNumber', newText);
     }
   };
 
@@ -95,13 +166,17 @@ const AddGuestNext = () => {
           value={contactDetails.email}
           keyboardType="email-address"
         />
+        {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+
         <TextInput
           style={styles.input}
           placeholder="Contact Number"
-          onChangeText={text => handleInputChange('contactNumber', text)}
+          onChangeText={handleContactNumberInput}
           value={contactDetails.contactNumber}
           keyboardType="phone-pad"
         />
+        {errors.contactNumber && <Text style={styles.errorText}>{errors.contactNumber}</Text>}
+
         <TextInput
           style={[styles.input, styles.addressInput]}
           placeholder="Address"
@@ -110,13 +185,19 @@ const AddGuestNext = () => {
           multiline={true}
           numberOfLines={4}
         />
+        {errors.address && <Text style={styles.errorText}>{errors.address}</Text>}
       </ScrollView>
+
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.nextButton} onPress={handleSubmit}>
-          <Text style={styles.nextButtonText}>Submit</Text>
+        <TouchableOpacity 
+          style={[styles.nextButton, isSubmitting && styles.buttonDisabled]} 
+          onPress={handleSubmit} 
+          disabled={isSubmitting}
+        >
+          <Text style={styles.nextButtonText}>{isSubmitting ? 'Submitting...' : 'Submit'}</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -162,6 +243,11 @@ const styles = StyleSheet.create({
   addressInput: {
     height: 100,
   },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginBottom: 10,
+  },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -190,6 +276,9 @@ const styles = StyleSheet.create({
   nextButtonText: {
     color: '#fff',
     textAlign: 'center'
+  },
+  buttonDisabled: {
+    backgroundColor: '#cccccc',
   }
 });
 
