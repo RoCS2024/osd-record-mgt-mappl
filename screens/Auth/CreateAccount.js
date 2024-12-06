@@ -4,6 +4,11 @@ import { useNavigation } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
 import axios from 'axios';
 
+/**
+ * CreateAccount component handles user registration.
+ * Allows users to input their username, password, email, and user type (student, employee, guest),
+ * validate the inputs, and submit the registration form to the backend server.
+ */
 const CreateAccount = () => {
   const navigation = useNavigation();
   const [userType, setUserType] = useState('');
@@ -24,8 +29,8 @@ const CreateAccount = () => {
 
   /**
    * Validates the email format using a regular expression.
-   * @param {string} email - The email address to validate
-   * @returns {boolean} - Returns true if the email format is valid, otherwise false
+   * @param {string} email - The email address to validate.
+   * @returns {boolean} - Returns true if the email format is valid, otherwise false.
    */
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -33,8 +38,30 @@ const CreateAccount = () => {
   };
 
   /**
+   * Validates the username.
+   * @param {string} username - The username to validate.
+   * @returns {boolean} - Returns true if the username is valid (alphanumeric only), otherwise false.
+   */
+  const validateUsername = (username) => {
+    const usernameRegex = /^[a-zA-Z0-9]+$/;
+    return usernameRegex.test(username);
+  };
+
+  /**
+   * Clears the form fields when the user changes the userType.
+   * @param {string} selectedUserType - The selected userType (e.g., student, employee, guest).
+   */
+  const handleUserTypeChange = (selectedUserType) => {
+    setUserType(selectedUserType);
+    setUsername('');
+    setPassword('');
+    setStudentOrEmployeeNumber('');
+    setEmail('');
+  };
+
+  /**
    * Handles the registration process based on the user type.
-   * If user type is 'guest', generates a guest number and sends a registration request.
+   * If the user type is 'guest', generates a guest number and navigates to the AddGuest screen.
    * Otherwise, calls submitForm to register students or employees.
    * 
    * @async
@@ -43,27 +70,30 @@ const CreateAccount = () => {
    */
   const handleRegister = async () => {
     setErrorMessage('');
-    if (!username || !password) {
-      setErrorMessage('Please enter valid username and password.');
-      return;
+    let newErrors = {};
+
+    if (!username || !validateUsername(username)) {
+      newErrors.username = 'Please enter a valid username (alphanumeric characters only).';
     }
 
-    if (!username || !/^[a-zA-Z0-9]+$/.test(username)) {
-      setErrorMessage('Please enter a valid username (alphanumeric characters only).');
-      return;
-    }
     if (!password) {
-      setErrorMessage('Please enter a password.');
-      return;
+      newErrors.password = 'Please enter a password.';
+    } else if (password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters.';
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])/.test(password)) {
+      newErrors.password = 'Your password is weak. Please include a mix of uppercase, lowercase, numbers, and special characters.';
     }
 
     if (userType !== 'guest' && !studentOrEmployeeNumber) {
-      setErrorMessage('Please enter your Member Number.');
-      return;
+      newErrors.studentOrEmployeeNumber = 'Please enter your Member Number.';
     }
 
     if (userType !== 'guest' && !validateEmail(email)) {
-      setErrorMessage('Please enter a valid email address.');
+      newErrors.email = 'Please enter a valid email address.';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrorMessage(newErrors[Object.keys(newErrors)[0]]);
       return;
     }
 
@@ -72,8 +102,6 @@ const CreateAccount = () => {
     if (userType === 'guest') {
       try {
         const guestNumber = `GUEST_${Math.floor(1000 + Math.random() * 9000)}`;
-        console.log('Navigating to AddGuest with:', username, password);
-        // Pass username and password to AddGuest
         navigation.navigate('AddGuest', { guestNumber, username, password });
       } catch (error) {
         setErrorMessage('An unexpected error occurred.');
@@ -105,8 +133,12 @@ const CreateAccount = () => {
       }
     };
 
+  /**
+  * Note: Change the IP address in the axios URL to match your backend server's IP address and port.
+  */
     try {
-      const response = await axios.post('http://192.168.1.21:8080/user/register', payload);
+      const backendUrl = 'http://192.168.1.8:8080';
+      const response = await axios.post(`${backendUrl}/user/register`, payload);
       if (response.status === 200) {
         navigation.navigate('VerifyOtp', { username });
       } else {
@@ -132,7 +164,7 @@ const CreateAccount = () => {
             <Picker
               selectedValue={userType}
               style={styles.picker}
-              onValueChange={(itemValue) => setUserType(itemValue)}
+              onValueChange={(itemValue) => handleUserTypeChange(itemValue)}
             >
               <Picker.Item label="Select User Type" value="" />
               <Picker.Item label="Student" value="student" />
@@ -230,6 +262,7 @@ const CreateAccount = () => {
   );
 };
 
+
 const styles = StyleSheet.create({
   background: {
     flex: 1,
@@ -296,7 +329,6 @@ const styles = StyleSheet.create({
   },
   picker: {
     flex: 1,
-    height: '100%',
   },
   icon: {
     width: 15,

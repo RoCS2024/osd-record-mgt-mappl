@@ -3,6 +3,11 @@ import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, ImageBackgr
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 
+/**
+ * ForgotPassword component handles the process of resetting the user's password.
+ * It allows the user to request a password reset by submitting their username,
+ * receive an OTP (one-time password), and set a new password.
+ */
 const ForgotPassword = () => {
   const navigation = useNavigation();
   const [username, setUsername] = useState('');
@@ -19,13 +24,14 @@ const ForgotPassword = () => {
   });
 
   /**
-   * Handles input changes and updates the state.
-   * @param {string} name - Field name (username, otp, password)
-   * @param {string} value - Field value entered by the user.
+   * Updates the form field values and clears any associated error messages.
+   * 
+   * @param {string} name - The name of the field being updated.
+   * @param {string} value - The value to be set for the specified field.
    */
   const handleChange = (name, value) => {
     setErrors({ ...errors, [name]: '' });
-    
+
     if (name === 'username') {
       setUsername(value);
     }
@@ -34,14 +40,18 @@ const ForgotPassword = () => {
   };
 
   /**
-   * Handles the password reset process.
-   * First, requests OTP with username, then submits OTP and new password.
+   * Handles the submission of the password reset form.
+   * First, it checks if the username is provided and sends a request for an OTP.
+   * After receiving the OTP, it allows the user to input a new password.
+   * 
+   * @async
+   * @function
+   * @returns {Promise<void>}
    */
   const handleSubmit = async () => {
     setErrors({ username: '', otp: '', password: '', form: '' });
     setIsButtonDisabled(true);
 
-    // Request OTP if not yet showing password input
     if (!showPasswordAndOTP) {
       if (!username) {
         setErrors({ ...errors, username: 'Username is Required' });
@@ -49,8 +59,11 @@ const ForgotPassword = () => {
         return;
       }
 
+  /**
+  * Note: Change the IP address in the axios URL to match your backend server's IP address and port.
+  */
       try {
-        const response = await axios.post('http://192.168.1.21:8080/user/forgot-password', { username });
+        const response = await axios.post('http://192.168.1.8:8080/user/forgot-password', { username });
         if (response.status === 200) {
           setShowPasswordAndOTP(true);
         } else {
@@ -72,14 +85,16 @@ const ForgotPassword = () => {
         return;
       }
 
-      // Submit OTP and new password
+  /**
+  * Note: Change the IP address in the axios URL to match your backend server's IP address and port.
+  */
       try {
         const payload = {
           username,
           otp,
           password
         };
-        const response = await axios.post('http://192.168.1.21:8080/user/verify-forgot-password', payload);
+        const response = await axios.post('http://192.168.1.8:8080/user/verify-forgot-password', payload);
         if (response.status === 200) {
           Alert.alert('Success', 'Password has been updated successfully!');
           navigation.navigate('Login');

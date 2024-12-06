@@ -34,81 +34,69 @@ const Login = () => {
    * 
    * Note: Change the IP address in the axios URL to match your backend server's IP address and port.
    */
- /**
- * handleLogin is an asynchronous function that handles the login process for the user.
- * It sends a POST request with the username and password to the backend server, 
- * retrieves the JWT token upon successful authentication, decodes the token to extract 
- * the user's role, and navigates to the appropriate screen based on the user's role.
- * 
- */
-const handleLogin = async () => {
-  setErrorMessage(''); // Clear any previous error messages
-  const userData = { username, password };
+  const handleLogin = async () => {
+    setErrorMessage('');
+    const userData = { username, password };
 
-  try {
-    const response = await axios.post('http://192.168.1.21:8080/user/login', userData, {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    try {
+      const response = await axios.post('http://192.168.1.8:8080/user/login', userData, {
+        headers: { 'Content-Type': 'application/json' },
+      });
 
-    if (response.status === 200) {
-      // Extract JWT token from the response headers
-      const token = response.headers['jwt-token'];
-      if (!token) {
-        setErrorMessage('Token not received from server.');
-        return;
-      }
+      if (response.status === 200) {
+        const studentNumber = response.data;
 
-      const decodedToken = jwtDecode(token);
-      const roles = decodedToken.authorities || [];
-
-      const roleString = roles.join(' ');
-      let userRole = null;
-
-      if (roleString.includes('ROLE_STUDENT')) {
-        userRole = 'ROLE_STUDENT';
-      } else if (roleString.includes('ROLE_EMPLOYEE')) {
-        userRole = 'ROLE_EMPLOYEE';
-      } else if (roleString.includes('ROLE_GUEST')) {
-        userRole = 'ROLE_GUEST';
-      }
-
-      if (userRole) {
-        await AsyncStorage.setItem('role', userRole);
-
-        if (userRole === 'ROLE_STUDENT') {
-          navigation.replace('Main', {
-            screen: 'Students',
-            params: { screen: 'StudentViolation' },
-          });
-        } else if (userRole === 'ROLE_EMPLOYEE') {
-          navigation.replace('Main', {
-            screen: 'Employees',
-            params: { screen: 'EmployeeReport' },
-          });
-        } else if (userRole === 'ROLE_GUEST') {
-          navigation.replace('Main', {
-            screen: 'Guests',
-            params: { screen: 'GuestViolation' },
-          });
+        if (!studentNumber) {
+          setErrorMessage('Student number not received from server.');
+          return;
         }
+
+        const token = response.headers['jwt-token'];
+
+        if (!token) {
+          setErrorMessage('Token not received from server.');
+          return;
+        }
+
+        const decodedToken = jwtDecode(token);
+
+        const roles = decodedToken.authorities || [];
+        const userRole = roles.find((role) => role.includes('ROLE_'));
+
+        if (!userRole) {
+          Alert.alert('Error', 'Unauthorized role. Please try again.');
+          return;
+        }
+
+        await AsyncStorage.setItem('role', userRole);
+        await AsyncStorage.setItem('token', token);
+        await AsyncStorage.setItem('studentNumber', studentNumber);
+
+        navigation.replace('Main', {
+          screen: 'Students',
+          params: { screen: 'StudentViolation', studentNumber },
+        });
       } else {
-        Alert.alert('Error', 'Unauthorized role. Please try again.');
+        setErrorMessage('Login failed. Please check your credentials.');
       }
-    } else {
-      setErrorMessage('Login failed. Please check your credentials.');
+    } catch (error) {
+      console.error('Error during login:', error);
+
+      if (error.response && error.response.status === 400) {
+        setErrorMessage('Incorrect username or password. Please try again.');
+      } else if (error.response) {
+        const serverMessage = error.response.data?.message || 'Invalid request. Please check your input.';
+        setErrorMessage(serverMessage);
+        Alert.alert('Login Error', serverMessage);
+      } else if (error.request) {
+        setErrorMessage('No response from server. Check network or server status.');
+        Alert.alert('Login Error', 'No response from server. Check network or server status.');
+      } else {
+        setErrorMessage('Request error. Please try again.');
+        Alert.alert('Login Error', 'Request error. Please try again.');
+      }
     }
-  } catch (error) {
-    if (error.response) {
-      const serverMessage = error.response.data?.message || 'Invalid request. Please check your input.';
-      setErrorMessage(serverMessage);
-    } else if (error.request) {
-      setErrorMessage('No response from server. Check network or server status.');
-    } else {
-      setErrorMessage('Request error. Please try again.');
-    }
-  }
-};
-  
+  };
 
   return (
     <ImageBackground source={require('../../assets/images/img3-1.png')} style={styles.background}>
@@ -117,7 +105,7 @@ const handleLogin = async () => {
           <Image source={require('../../assets/images/logo-1.png')} style={styles.logo} />
         </View>
         <Text style={styles.headerText}>Login</Text>
-        
+
         <View style={[styles.inputGroup, styles.usernameField]}>
           <Text style={styles.inputLabel}>Username</Text>
           <TextInput
@@ -202,10 +190,10 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 18,
     height: 40,
     backgroundColor: 'white',
-    marginLeft: 10,
+    marginLeft: 0,
   },
   inputLabel: {
     position: 'absolute',
