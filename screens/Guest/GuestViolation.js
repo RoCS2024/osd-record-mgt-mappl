@@ -42,12 +42,36 @@ const GuestViolation = () => {
           return;
         }
 
+        let decodedPayload = {};
+        try {
+          const base64Payload = token.split('.')[1];
+          decodedPayload = JSON.parse(atob(base64Payload));
+        } catch (decodeError) {
+          console.error('Error decoding token:', decodeError);
+          Alert.alert('Error', 'Invalid session. Please log in again.');
+          handleLogout();
+          return;
+        }
+  
+        const currentTime = Math.floor(Date.now() / 1000);
+        if (decodedPayload.exp && decodedPayload.exp < currentTime) {
+          handleLogout();
+          return;
+        }
+  
+        if (storedRole !== 'ROLE_ROLE_GUEST') {
+          Alert.alert('Unauthorized Access', 'You do not have permission to access this page.');
+          handleLogout();
+          return;
+        }
+  
+        setRole(storedRole);
         setGuestId(storedGuestId);
-        fetchViolations(storedGuestId);
+        fetchViolations(storedGuestId, token);
       } catch (err) {
         console.error('Initialization error:', err);
-        Alert.alert('Error', 'An error occurred during initialization.');
-        setLoading(false);
+        Alert.alert('Error', 'An error occurred during initialization. Please log in again.');
+        handleLogout();
       }
     };
 
@@ -77,22 +101,15 @@ const GuestViolation = () => {
       });
 
       const responseBody = await response.text();
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch beneficiaries. HTTP Status: ${response.status}`);
-      }
-
       const beneficiariesData = JSON.parse(responseBody);
 
       if (!Array.isArray(beneficiariesData)) {
         throw new Error('The response is not an array. Check the API response.');
       }
 
-      const fetchedViolations = await Promise.all(
-        beneficiariesData.flatMap((beneficiary) =>
+      const fetchedViolations = beneficiariesData.flatMap((beneficiary) =>
           beneficiary.beneficiary.map(async (student) => {
-            try {
-              const studentNumber = student.studentNumber;
+              const { studentNumber, firstName, lastName } = student;
               const violationResponse = await fetch(
                 `http://192.168.1.8:8080/violation/studentNumber/${studentNumber}`,
                 {
@@ -103,42 +120,26 @@ const GuestViolation = () => {
                 }
               );
 
-              if (!violationResponse.ok) {
-                console.error(`Failed to fetch violations for ${studentNumber}`);
-                return {
-                  studentName: `${student.firstName} ${student.lastName}`,
-                  studentNumber,
-                  violations: [],
-                };
-              }
-
               const violationsData = await violationResponse.json();
+                return {
+                  studentName: `${firstName} ${lastName}`,
+                  studentNumber,
+                  violations: violationsData,
+                };
+              })
+            );
 
-              return {
-                studentName: `${student.firstName} ${student.lastName}`,
-                studentNumber,
-                violations: violationsData,
-              };
-            } catch (err) {
-              console.error(`Error fetching violations for Student Number: ${student.studentNumber}`, err);
-              return {
-                studentName: `${student.firstName} ${student.lastName}`,
-                studentNumber: student.studentNumber,
-                violations: [],
-              };
-            }
-          })
-        )
-      );
+            const allViolations = await Promise.all(fetchedViolations);
 
-      setViolations(fetchedViolations.flat());
-    } catch (error) {
+              setViolations(allViolations.flat());
+
+           } catch (error) {
       console.error('Error fetching data:', error.message);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setError(error.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleLogout = async () => {
     try {
