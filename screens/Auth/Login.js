@@ -37,51 +37,73 @@ const Login = () => {
   const handleLogin = async () => {
     setErrorMessage('');
     const userData = { username, password };
-
+  
     try {
-      const response = await axios.post('http://192.168.1.8:8080/user/login', userData, {
+      const response = await axios.post('http://192.168.1.16:8080/user/login', userData, {
         headers: { 'Content-Type': 'application/json' },
       });
-
+  
       if (response.status === 200) {
-        const studentNumber = response.data;
-
+        let studentNumber = response.data;
+  
         if (!studentNumber) {
           setErrorMessage('Student number not received from server.');
           return;
         }
 
+  
+        if (typeof studentNumber === 'number') {
+          studentNumber = studentNumber.toString();
+        }
+  
         const token = response.headers['jwt-token'];
-
+  
         if (!token) {
           setErrorMessage('Token not received from server.');
           return;
         }
-
+  
         const decodedToken = jwtDecode(token);
-
+  
         const roles = decodedToken.authorities || [];
         const userRole = roles.find((role) => role.includes('ROLE_'));
-
+  
         if (!userRole) {
           Alert.alert('Error', 'Unauthorized role. Please try again.');
           return;
         }
 
+  
         await AsyncStorage.setItem('role', userRole);
         await AsyncStorage.setItem('token', token);
-        await AsyncStorage.setItem('studentNumber', studentNumber);
-
-        navigation.replace('Main', {
-          screen: 'Students',
-          params: { screen: 'StudentViolation', studentNumber },
-        });
+  
+        if (userRole.includes('ROLE_GUEST')) {
+          await AsyncStorage.setItem('guestId', studentNumber);
+  
+          navigation.replace('Main', {
+            screen: 'Guests',
+            params: { screen: 'GuestViolation' },
+          });
+        } else if (userRole.includes('ROLE_EMPLOYEE')) {
+          await AsyncStorage.setItem('employeeId', studentNumber);
+  
+          navigation.replace('Main', {
+            screen: 'Employees',
+            params: { screen: 'EmployeeReport' },
+          });
+        } else {
+          await AsyncStorage.setItem('studentNumber', studentNumber);
+          navigation.replace('Main', {
+            screen: 'Students',
+            params: { screen: 'StudentViolation', studentNumber },
+          });
+        }
       } else {
         setErrorMessage('Login failed. Please check your credentials.');
       }
     } catch (error) {
       console.error('Error during login:', error);
-
+  
       if (error.response && error.response.status === 400) {
         setErrorMessage('Incorrect username or password. Please try again.');
       } else if (error.response) {
@@ -97,6 +119,7 @@ const Login = () => {
       }
     }
   };
+  
 
   return (
     <ImageBackground source={require('../../assets/images/img3-1.png')} style={styles.background}>
