@@ -34,7 +34,7 @@ const VerifyOtp = () => {
         otp,
       };
 
-      const response = await axios.post('http://192.168.1.8:8080/user/verify-otp', payload, {
+      const response = await axios.post('http://192.168.1.16:8080/user/verify-otp', payload, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
