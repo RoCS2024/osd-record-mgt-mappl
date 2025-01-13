@@ -120,7 +120,7 @@ const AddGuestNext = () => {
   * Note: Change the IP address in the axios URL to match your backend server's IP address and port.
   */
     try {
-      const response = await axios.post('http://192.168.1.8:8080/user/register', payload);
+      const response = await axios.post('http://192.168.1.16:8080/user/register', payload);
 
       if (response.status === 200) {
         Alert.alert('Success', 'Guest has been successfully registered!');

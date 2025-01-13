@@ -10,8 +10,11 @@ import CreateAccount from '../screens/Auth/CreateAccount';
 import VerifyOtp from '../screens/Auth/VerifyOtp';
 import AddGuest from '../screens/Auth/AddGuest';
 import AddGuestNext from '../screens/Auth/AddGuestNext';
+import GuestCsSlip from '../screens/Guest/GuestCsSlip'
 import GuestViolation from '../screens/Guest/GuestViolation';
 import StudentViolation from '../screens/Student/StudentViolation';
+import StudentCsSlip from '../screens/Student/StudentCsSlip';
+import EmployeeReport from '../screens/Employee/EmployeeReport';
 
 // Stack Navigators
 const Stack = createStackNavigator();
@@ -39,6 +42,7 @@ function AuthNavigator() {
 function GuestNavigator() {
   return (
     <GuestStack.Navigator screenOptions={{ headerShown: false }}>
+      <GuestStack.Screen name="GuestCsSlip" component={GuestCsSlip} />
       <GuestStack.Screen name="GuestViolation" component={GuestViolation} />
     </GuestStack.Navigator>
   );
@@ -49,6 +53,7 @@ function StudentNavigator() {
   return (
     <StudentStack.Navigator screenOptions={{ headerShown: false }}>
       <StudentStack.Screen name="StudentViolation" component={StudentViolation} />
+      <StudentStack.Screen name="StudentCsSlip" component={StudentCsSlip} />
     </StudentStack.Navigator>
   );
 }
@@ -57,6 +62,7 @@ function StudentNavigator() {
 function EmployeeNavigator() {
   return (
     <EmployeeStack.Navigator screenOptions={{ headerShown: false }}>
+      <EmployeeStack.Screen name="EmployeeReport" component={EmployeeReport} />
     </EmployeeStack.Navigator>
   );
 }

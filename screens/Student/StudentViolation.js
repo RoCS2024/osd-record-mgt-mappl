@@ -91,7 +91,7 @@ const StudentViolation = () => {
   const loadViolations = async (studentNumber, token) => {
     try {
       const response = await axios.get(
-        `http://192.168.1.8:8080/violation/studentNumber/${studentNumber}`,
+        `http://192.168.1.16:8080/violation/studentNumber/${studentNumber}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     marginLeft: 20,
   },
   breakLine: {
-    borderBottomColor: '#000',
+    borderBottomColor: '#D3D3D3',
     borderBottomWidth: 2,
     marginHorizontal: 20,
     marginBottom: 10,

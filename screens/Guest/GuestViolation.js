@@ -93,7 +93,7 @@ const GuestViolation = () => {
 
     try {
       const token = await AsyncStorage.getItem('token');
-      const response = await fetch(`http://192.168.1.8:8080/guest/${guestId}/Beneficiaries`, {
+      const response = await fetch(`http://192.168.1.16:8080/guest/${guestId}/Beneficiaries`, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -111,7 +111,7 @@ const GuestViolation = () => {
           beneficiary.beneficiary.map(async (student) => {
               const { studentNumber, firstName, lastName } = student;
               const violationResponse = await fetch(
-                `http://192.168.1.8:8080/violation/studentNumber/${studentNumber}`,
+                `http://192.168.1.16:8080/violation/studentNumber/${studentNumber}`,
                 {
                   headers: {
                     'Content-Type': 'application/json',

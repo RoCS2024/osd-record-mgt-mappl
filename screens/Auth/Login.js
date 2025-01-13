@@ -50,7 +50,6 @@ const Login = () => {
           setErrorMessage('Student number not received from server.');
           return;
         }
-
   
         if (typeof studentNumber === 'number') {
           studentNumber = studentNumber.toString();
@@ -72,7 +71,6 @@ const Login = () => {
           Alert.alert('Error', 'Unauthorized role. Please try again.');
           return;
         }
-
   
         await AsyncStorage.setItem('role', userRole);
         await AsyncStorage.setItem('token', token);
@@ -85,7 +83,7 @@ const Login = () => {
             params: { screen: 'GuestViolation' },
           });
         } else if (userRole.includes('ROLE_EMPLOYEE')) {
-          await AsyncStorage.setItem('employeeId', studentNumber);
+          await AsyncStorage.setItem('employeeNumber', studentNumber);
   
           navigation.replace('Main', {
             screen: 'Employees',
@@ -119,6 +117,7 @@ const Login = () => {
       }
     }
   };
+  
   
 
   return (
