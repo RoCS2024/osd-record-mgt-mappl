@@ -137,7 +137,7 @@ const CreateAccount = () => {
   * Note: Change the IP address in the axios URL to match your backend server's IP address and port.
   */
     try {
-      const backendUrl = 'http://192.168.1.16:8080';
+      const backendUrl = 'https://amused-gnu-legally.ngrok-free.app';
       const response = await axios.post(`${backendUrl}/user/register`, payload);
       if (response.status === 200) {
         navigation.navigate('VerifyOtp', { username });

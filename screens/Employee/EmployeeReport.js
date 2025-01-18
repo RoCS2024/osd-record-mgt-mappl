@@ -86,7 +86,7 @@ const EmployeeReport = () => {
             return;
         }
 
-        const response = await fetch(`http://192.168.1.16:8080/employee/employeeNumber/${storedEmployeeNumber}`, {
+        const response = await fetch(`https://amused-gnu-legally.ngrok-free.app/employee/employeeNumber/${storedEmployeeNumber}`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
             },
@@ -129,7 +129,7 @@ const EmployeeReport = () => {
 
         const stationName = employeeData.station.stationName;
 
-        const slipResponse = await fetch(`http://192.168.1.16:8080/csSlip/areaOfCs/${stationName}`, {
+        const slipResponse = await fetch(`https://amused-gnu-legally.ngrok-free.app/csSlip/areaOfCs/${stationName}`, {
             headers: { 'Authorization': `Bearer ${token}` },
         });
 
@@ -162,7 +162,7 @@ const EmployeeReport = () => {
 const loadTotalCsHours = async (studentNumber) => {
   try {
     const token = await AsyncStorage.getItem('token');
-    const url = `http://192.168.1.16:8080/csSlip/totalCsHours/${studentNumber}`;
+    const url = `https://amused-gnu-legally.ngrok-free.app/csSlip/totalCsHours/${studentNumber}`;
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -259,7 +259,7 @@ const loadTotalCsHours = async (studentNumber) => {
     try {
       const token = await AsyncStorage.getItem("token");
       const response = await fetch(
-        `http://192.168.1.16:8080/csreport/addCsReportForSlip/${csSlipId}`,
+        `https://amused-gnu-legally.ngrok-free.app/csreport/addCsReportForSlip/${csSlipId}`,
         {
           method: "POST",
           headers: {
@@ -319,22 +319,22 @@ const loadTotalCsHours = async (studentNumber) => {
     const csSlipId = csSlip.id;
 
     setReport((prevReport) => ({
-        ...prevReport,
-        csSlipId,
-        studentID: studentNumber,
-        fullName: `${csSlip.student.firstName} ${csSlip.student.lastName}`,
-        section: csSlip.student.section.sectionName,
-        clusterHead: csSlip.student.section.clusterHead,
-        areaOfService: csSlip.areaOfCommServ.stationName,
-        reasonForService: csSlip.reasonOfCs,
-        dateOfCS: csSlip.dateOfCs ? new Date(csSlip.dateOfCs) : new Date(),
-        natureOfWork: csSlip.natureOfWork || "",
-        status: csSlip.status || "",
-        timeIn: new Date(),
-        timeOut: new Date(),
-        remarks: "",
-        totalHoursCompleted: 0,
-        remainingHours: 0,
+      ...prevReport,
+      csSlipId,
+      studentID: studentNumber,
+      fullName: `${csSlip.student.firstName} ${csSlip.student.lastName}`,
+      section: csSlip.student.section.sectionName,
+      clusterHead: csSlip.student.section.clusterHead,
+      areaOfService: csSlip.areaOfCommServ.stationName,
+      reasonForService: csSlip.reasonOfCs,
+      dateOfCS: csSlip.dateOfCs ? new Date(csSlip.dateOfCs) : new Date(),
+      natureOfWork: csSlip.natureOfWork || '',
+      status: csSlip.status || '',
+      timeIn: new Date(),
+      timeOut: new Date(),
+      remarks: '',
+      totalHoursCompleted: 0,
+      remainingHours: 0,
     }));
 
     const csDeduction = csSlip.deduction || 0;
@@ -343,46 +343,46 @@ const loadTotalCsHours = async (studentNumber) => {
     await loadTotalCsHours(studentNumber);
 
     try {
-        const token = await AsyncStorage.getItem("token");
-        const response = await fetch(`http://192.168.1.16:8080/csSlip/commServSlip/${csSlipId}`, {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-            },
-        });
+      const token = await AsyncStorage.getItem('token');
+      const response = await fetch(`https://amused-gnu-legally.ngrok-free.app/csSlip/commServSlip/${csSlipId}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-        const responseText = await response.text();
-        if (!response.ok) {
-            throw new Error(`Failed to fetch reports for csSlipId ${csSlipId}, status code: ${response.status}`);
-        }
+      const responseText = await response.text();
+      if (!response.ok) {
+        throw new Error(`Failed to fetch reports for csSlipId ${csSlipId}, status code: ${response.status}`);
+      }
 
-        const fetchedReports = JSON.parse(responseText);
+      const fetchedReports = JSON.parse(responseText);
 
-        if (!Array.isArray(fetchedReports.reports)) {
-            throw new Error("Fetched reports is not an array under 'reports'.");
-        }
+      if (!Array.isArray(fetchedReports.reports)) {
+        throw new Error("Fetched reports is not an array under 'reports'.");
+      }
 
-        setReports(fetchedReports.reports);
+      setReports(fetchedReports.reports);
 
-        const hoursCompleted = fetchedReports.reports.reduce((sum, report) => sum + (report.hoursCompleted || 0), 0);
+      const hoursCompleted = fetchedReports.reports.reduce((sum, report) => sum + (report.hoursCompleted || 0), 0);
 
-        const totalCompleted = hoursCompleted + csDeduction;
-        setCompletedHours(totalCompleted);
+      const totalCompleted = hoursCompleted + csDeduction;
+      setCompletedHours(totalCompleted);
 
-        const remainingHours = parseFloat(totalCsHours) - totalCompleted;
-        setRemainingHours(remainingHours);
+      const remainingHours = totalCsHours ? totalCsHours - totalCompleted : 0;
+      setRemainingHours(remainingHours);
 
-        setReport((prevReport) => ({
-            ...prevReport,
-            totalHoursCompleted: totalCompleted,
-            remainingHours,
-        }));
+      setReport((prevReport) => ({
+        ...prevReport,
+        totalHoursCompleted: totalCompleted,
+        remainingHours,
+      }));
     } catch (error) {
-        console.error("Error fetching reports for csSlipId:", csSlipId, error);
-        setReports([]);
+      console.error('Error fetching reports for csSlipId:', csSlipId, error);
+      setReports([]);
     }
-};
+  };
   
   return (
     <TouchableWithoutFeedback onPress={closeDropdown}>
@@ -470,18 +470,25 @@ const loadTotalCsHours = async (studentNumber) => {
           />
 
           <View style={styles.inputRow}>
-            <TextInput
-              style={[styles.input, { flex: 1 }]}
-              placeholder="Hours Required"
-              value={totalCsHours ? totalCsHours.toString() : ""}
-              editable={false}
-            />
-            <TextInput
-              style={[styles.input, { flex: 1 }]}
-              placeholder="Hours to Deduct"
-              value={deduction ? deduction.toString() : ""}
-              editable={false}
-            />
+            <View style={styles.inputContainer}>
+              <Text style={styles.placeholderText}>Hours Required</Text>
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                placeholder="Enter Hours Required"
+                value={totalCsHours ? totalCsHours.toString() : ""}
+                editable={false}
+              />
+            </View>
+            
+            <View style={styles.inputContainer}>
+              <Text style={styles.placeholderText}>Hours to Deduct</Text>
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                placeholder="Enter Hours to Deduct"
+                value={deduction ? deduction.toString() : ""}
+                editable={false}
+              />
+            </View>
           </View>
 
           <Text style={styles.label}>Area of Community Service</Text>
@@ -644,8 +651,8 @@ const loadTotalCsHours = async (studentNumber) => {
                   style={styles.pickerStyle}
                 >
                   <Picker.Item label="Select Status" value="" />
-                  <Picker.Item label="Done" value="done" />
-                  <Picker.Item label="Undone" value="undone" />
+                  <Picker.Item label="Complete" value="Complete" />
+                  <Picker.Item label="Incomplete" value="Incomplete" />
                 </Picker>
                 </View>
 
@@ -818,14 +825,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 0,
   },
+  inputContainer: {
+    flex: 1,
+    marginRight: 10,
+  },
+  placeholderText: {
+    fontSize: 14,
+    marginBottom: 5,
+    fontWeight: 'bold',
+    marginLeft: 5,
+  },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
     padding: 10,
     borderRadius: 5,
     marginBottom: 10,
-    marginLeft: 10,
-    flex: 1,
   },
   addButton: {
     backgroundColor: '#0072BB',

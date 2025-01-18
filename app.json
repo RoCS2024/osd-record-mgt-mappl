@@ -2,6 +2,11 @@
   "expo": {
     "name": "osd-records-mgt-mobile-appl",
     "slug": "osd-records-mgt-mobile-appl",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "extra": {
+      "eas": {
+        "projectId": "d0492474-b2be-4354-8223-0d1dbb1eaeef"
+      }
+    }
   }
 }
