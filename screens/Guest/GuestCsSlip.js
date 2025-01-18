@@ -91,7 +91,7 @@ const GuestCsSlip = () => {
     setError(null);
 
     try {
-      const beneficiariesResponse = await fetch(`http://192.168.1.16:8080/guest/${guestId}/Beneficiaries`, {
+      const beneficiariesResponse = await fetch(`https://amused-gnu-legally.ngrok-free.app/guest/${guestId}/Beneficiaries`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -119,7 +119,7 @@ const GuestCsSlip = () => {
                 throw new Error(`No studentNumber found for student: ${JSON.stringify(student)}`);
               }
 
-              const csSlipResponse = await fetch(`http://192.168.1.16:8080/csSlip/studentNumber/${studentNumber}`, {
+              const csSlipResponse = await fetch(`https://amused-gnu-legally.ngrok-free.app/csSlip/studentNumber/${studentNumber}`, {
                 headers: { Authorization: `Bearer ${token}` },
               });
 

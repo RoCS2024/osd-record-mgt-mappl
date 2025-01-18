@@ -90,7 +90,7 @@ const StudentCsSlip = () => {
 
     try {
       const response = await fetch(
-        `http://192.168.1.16:8080/csSlip/studentNumber/${studentNumber}`,
+        `https://amused-gnu-legally.ngrok-free.app/csSlip/studentNumber/${studentNumber}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

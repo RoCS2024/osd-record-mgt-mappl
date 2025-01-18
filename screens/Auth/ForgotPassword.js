@@ -16,11 +16,13 @@ const ForgotPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordAndOTP, setShowPasswordAndOTP] = useState(false);
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [errors, setErrors] = useState({
     username: '',
     otp: '',
     password: '',
-    form: ''
+    form: '',
+    otpIncorrect: ''
   });
 
   /**
@@ -30,11 +32,8 @@ const ForgotPassword = () => {
    * @param {string} value - The value to be set for the specified field.
    */
   const handleChange = (name, value) => {
-    setErrors({ ...errors, [name]: '' });
-
-    if (name === 'username') {
-      setUsername(value);
-    }
+    setErrors({ ...errors, [name]: '', otpIncorrect: '' });
+    if (name === 'username') setUsername(value);
     if (name === 'otp') setOtp(value);
     if (name === 'password') setPassword(value);
   };
@@ -49,7 +48,7 @@ const ForgotPassword = () => {
    * @returns {Promise<void>}
    */
   const handleSubmit = async () => {
-    setErrors({ username: '', otp: '', password: '', form: '' });
+    setErrors({ username: '', otp: '', password: '', form: '', otpIncorrect: '' });
     setIsButtonDisabled(true);
 
     if (!showPasswordAndOTP) {
@@ -59,20 +58,20 @@ const ForgotPassword = () => {
         return;
       }
 
-  /**
-  * Note: Change the IP address in the axios URL to match your backend server's IP address and port.
-  */
+      setIsCheckingUsername(true);
+
       try {
-        const response = await axios.post('http://192.168.1.16:8080/user/forgot-password', { username });
+        const response = await axios.post('https://amused-gnu-legally.ngrok-free.app/user/forgot-password', { username });
         if (response.status === 200) {
           setShowPasswordAndOTP(true);
         } else {
           setErrors({ ...errors, form: 'Request Failed. Please check your credentials and try again.' });
         }
       } catch (error) {
-        setErrors({ ...errors, form: 'An error occurred while processing your request.' });
+        setErrors({ ...errors, form: 'Username not found.' });
       } finally {
         setIsButtonDisabled(false);
+        setIsCheckingUsername(false);
       }
     } else {
       const validationErrors = {};
@@ -85,16 +84,25 @@ const ForgotPassword = () => {
         return;
       }
 
-  /**
-  * Note: Change the IP address in the axios URL to match your backend server's IP address and port.
-  */
+      // Password strength validation
+      if (password.length < 8) {
+        validationErrors.password = 'Password must be at least 8 characters.';
+      }
+
+      // Check for uppercase, lowercase, digits, and special characters
+      if (/^[a-z]+$/.test(password) || !/\d/.test(password) || !/[!@#$%^&*]/.test(password)) {
+        validationErrors.password = 'Your password is weak. Please include a mix of uppercase, lowercase, numbers, and special characters.';
+      }
+
+      if (Object.keys(validationErrors).length > 0) {
+        setErrors(validationErrors);
+        setIsButtonDisabled(false);
+        return;
+      }
+
       try {
-        const payload = {
-          username,
-          otp,
-          password
-        };
-        const response = await axios.post('http://192.168.1.16:8080/user/verify-forgot-password', payload);
+        const payload = { username, otp, password };
+        const response = await axios.post('https://amused-gnu-legally.ngrok-free.app/user/verify-forgot-password', payload);
         if (response.status === 200) {
           Alert.alert('Success', 'Password has been updated successfully!');
           navigation.navigate('Login');
@@ -102,7 +110,7 @@ const ForgotPassword = () => {
           setErrors({ ...errors, form: 'Failed to update password. Please check your OTP and try again.' });
         }
       } catch (error) {
-        setErrors({ ...errors, form: 'An error occurred while processing your request.' });
+        setErrors({ ...errors, otpIncorrect: 'Incorrect OTP. Please try again.' });
       } finally {
         setIsButtonDisabled(false);
       }
@@ -116,8 +124,6 @@ const ForgotPassword = () => {
           <Image source={require('../../assets/images/logo-1.png')} style={styles.logo} />
           <Text style={styles.headerText}>{showPasswordAndOTP ? 'Change Password' : 'Forgot Password'}</Text>
 
-          {errors.form && <Text style={styles.errorText}>{errors.form}</Text>}
-
           <Text style={styles.label}>Username</Text>
           <View style={styles.inputGroup}>
             <TextInput
@@ -125,10 +131,19 @@ const ForgotPassword = () => {
               value={username}
               onChangeText={(text) => handleChange('username', text)}
               autoCapitalize="none"
+              editable={!showPasswordAndOTP}  // Make the username field non-editable once we are on the second screen
             />
             <Image source={require('../../assets/images/user-1.png')} style={styles.icon} />
           </View>
           {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
+
+          {errors.form && !errors.username && !errors.otp && !errors.password && (
+            <Text style={styles.errorText}>{errors.form}</Text>
+          )}
+
+          {isCheckingUsername && !errors.form && (
+            <Text style={[styles.errorText, { color: 'green' }]}>Checking Username...</Text>
+          )}
 
           {showPasswordAndOTP && (
             <>
@@ -143,6 +158,7 @@ const ForgotPassword = () => {
                 />
               </View>
               {errors.otp && <Text style={styles.errorText}>{errors.otp}</Text>}
+              {errors.otpIncorrect && <Text style={[styles.errorText, { color: 'red' }]}>{errors.otpIncorrect}</Text>}
 
               <Text style={styles.label}>New Password</Text>
               <View style={styles.inputGroup}>
@@ -255,8 +271,9 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: 'red',
-    alignSelf: 'flex-start',
-    marginBottom: 5,
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 10,
   },
 });
 

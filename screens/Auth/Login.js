@@ -39,7 +39,7 @@ const Login = () => {
     const userData = { username, password };
   
     try {
-      const response = await axios.post('http://192.168.1.16:8080/user/login', userData, {
+      const response = await axios.post('https://amused-gnu-legally.ngrok-free.app/user/login', userData, {
         headers: { 'Content-Type': 'application/json' },
       });
   
@@ -100,8 +100,6 @@ const Login = () => {
         setErrorMessage('Login failed. Please check your credentials.');
       }
     } catch (error) {
-      console.error('Error during login:', error);
-  
       if (error.response && error.response.status === 400) {
         setErrorMessage('Incorrect username or password. Please try again.');
       } else if (error.response) {
@@ -117,7 +115,16 @@ const Login = () => {
       }
     }
   };
-  
+
+  const handleUsernameChange = (text) => {
+    setUsername(text);
+    setErrorMessage('');
+  };
+
+  const handlePasswordChange = (text) => {
+    setPassword(text);
+    setErrorMessage('');
+  };
   
 
   return (
@@ -133,7 +140,7 @@ const Login = () => {
           <TextInput
             style={styles.input}
             value={username}
-            onChangeText={setUsername}
+            onChangeText={handleUsernameChange}
             autoCapitalize="none"
           />
           <Image source={require('../../assets/images/user-1.png')} style={styles.icon} />
@@ -144,7 +151,7 @@ const Login = () => {
           <TextInput
             style={styles.input}
             value={password}
-            onChangeText={setPassword}
+            onChangeText={handlePasswordChange}
             secureTextEntry={!passwordVisible}
             autoCapitalize="none"
           />
@@ -235,6 +242,11 @@ const styles = StyleSheet.create({
     padding: 0,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 14,
+    marginBottom: 20,
   },
   forgotUsernameButton: {
     alignSelf: 'flex-end',
